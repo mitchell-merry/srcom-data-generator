@@ -34,6 +34,11 @@ if(process.env.SHEET_ID === undefined) {
     process.exit(1);
 }
 
+if(process.env.SHEET_RANGE === undefined) {
+    console.log("You must define a SHEET_RANGE in a .env file in the root of this project.");
+    process.exit(1);
+}
+
 console.log("Setting up sheets...");
 const sheets = await getSheets();
 
@@ -42,4 +47,4 @@ const rawRuns = await getRunsFromLeaderboard();
 console.log(`Fetched ${rawRuns.length} runs.`);
 
 console.log("Loading data...");
-loadDataIntoSheet(sheets, process.env.SHEET_ID, "raw", formatRunsToTable(rawRuns));
+loadDataIntoSheet(sheets, process.env.SHEET_ID, process.env.SHEET_RANGE, formatRunsToTable(rawRuns));
