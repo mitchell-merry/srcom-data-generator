@@ -5,11 +5,12 @@ const BASE_URL = "https://www.speedrun.com/api/v1";
 
 // export async function fetchAllCategories()
 
-export async function fetchAllRuns(gameId: string, categoryID: string, options: RunsParams, variables: Record<string, string> = {}): Promise<Run[]> {
+export async function fetchAllRuns(gameId: string, categoryID: string, levelID: string | undefined, options: RunsParams = {}, variables: Record<string, string> = {}): Promise<Run[]> {
     const paramaters: RunsParams = {
         ...options,
-        'game': gameId,
-        'category': categoryID
+        game: gameId,
+        category: categoryID,
+        
     };
 
     let runs: Run[] = [];

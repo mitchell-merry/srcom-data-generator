@@ -17,7 +17,7 @@ async function getRunsFromLeaderboard() {
         direction: "asc"
     }
 
-    let runs = await fetchAllRuns(gameId, categoryId, options)
+    let runs = await fetchAllRuns(gameId, categoryId, levelId, options);
     console.log("INITIAL: " + runs.length);
 
     runs = runs.filter(run => {
