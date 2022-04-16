@@ -1,7 +1,7 @@
 import { google, sheets_v4 } from 'googleapis';
 import { Run } from 'srcom-rest-api';
 
-export type Table = (string | undefined | null)[][];
+export type Table = (string | number | undefined | null)[][];
 
 export async function getSheets () {
     const auth = new google.auth.GoogleAuth({ 

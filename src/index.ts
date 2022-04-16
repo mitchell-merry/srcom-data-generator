@@ -4,7 +4,8 @@ import { fetchAllLevelRuns, fetchAllRuns } from './api';
 import { RunsParams, Run, RunPlayer, Player, Data } from 'srcom-rest-api';
 import { getLeaderboardFromUser } from './user';
 import { formatRunsToTable, getSheets, loadDataIntoSheet, Table } from './sheets';
-import { ideahub } from 'googleapis/build/src/apis/ideahub';
+
+type Time = (number | undefined);
 
 async function getRunsFromLeaderboard() {
     const { gameId, levelId, categoryId, variables } = await getLeaderboardFromUser();
@@ -37,7 +38,7 @@ function formatRunsToFlourish(runs: Run[], top = -1): Table {
     let dates: string[] = runs.map(run => run.date).filter((d): d is string => !!d);
     dates = dates.filter((v, i) => v && dates.indexOf(v) === i) as string[];
 
-    let playerRuns: Record<string, Record<string, string>> = {}; 
+    let playerRuns: Record<string, Record<string, Time>> = {}; 
 
     /*
     {
@@ -77,25 +78,54 @@ function formatRunsToFlourish(runs: Run[], top = -1): Table {
         const n = playersToString(run.players);
         if(!playerRuns[n]) playerRuns[n] = {};
         
-        playerRuns[n][run.date] = Math.floor(run.times.primary_t*100/60)/100 + "";
+        playerRuns[n][run.date] = Math.floor(run.times.primary_t*100/60)/100;
     }
 
-    let playerRunData: Record<string, string[]> = Object.fromEntries(Object.entries(playerRuns)
-        .map(([p, r]) => {
+    let playerRunData: Record<string, Time[]> = Object.fromEntries(Object.entries(playerRuns)
+        .map(([p, runs]) => {
 
-            let pbs = dates.map((date, i) => r[date] || "");
-            pbs.forEach((pb, i) => pbs[i] = pb === "" && i !== 0 ? pbs[i-1] : pbs[i]);
+            let pbs: Time[] = dates.map((date, i) => runs[date]);
+
+            pbs.forEach((pb, i) => {
+                // extend times
+                if(!pb && i !== 0) pbs[i] = pbs[i-1];
+            });
 
             return [p, pbs];
         }));
 
-    // console.log(JSON.stringify(playerRunData, null, 2));
-
     if(top > 0) {
-        // filter by place
+        dates.forEach((date, i) => {
+            let boardOnDay: [string, Time][] = Object.entries(playerRunData)
+                .map(([p, r]): [string, Time] => {
+                    return [p, r[i]];
+                });
+
+            boardOnDay.sort((a, b) => {
+                if(!a[1]) return 1;
+                if(!b[1]) return -1;
+
+                return a[1] - b[1];
+            });
+
+            boardOnDay = boardOnDay.map(([player, time], i) => {
+                return [player, i >= top ? undefined : time];
+            });
+
+            boardOnDay.forEach(([player, time]) => {
+                playerRunData[player][i] = time;
+            });
+        });
+        
+        // console.log(JSON.stringify(playerRunData, null, 2));
     }
 
     // filter out empties
+    playerRunData = Object.fromEntries(Object.entries(playerRunData)
+        .filter(([player, times]) => {
+            return times.some(time => time);
+        }
+    ));
 
     return [
         [ "Player", ...dates ],
@@ -122,5 +152,5 @@ const rawRuns = await getRunsFromLeaderboard();
 console.log(`Fetched ${rawRuns.length} runs.`);
 
 console.log("Loading data...");
-loadDataIntoSheet(sheets, process.env.SHEET_ID, process.env.SHEET_RANGE, formatRunsToFlourish(rawRuns));
+loadDataIntoSheet(sheets, process.env.SHEET_ID, process.env.SHEET_RANGE, formatRunsToFlourish(rawRuns, 10));
 // formatRunsToFlourish(rawRuns);

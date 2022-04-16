@@ -1,5 +1,17 @@
+import Bottleneck from 'bottleneck';
 import fetch from 'node-fetch';
 import { Run, RunsParams, RunsResponse, GameLevelsResponse, GameCategoriesResponse, GameLevelsParams, GameCategoriesParams, LevelCategoriesResponse, LevelCategoriesParams } from 'srcom-rest-api';
+
+const limiter = new Bottleneck({
+    reservoir: 100, // initial value
+    reservoirRefreshAmount: 100,
+    reservoirRefreshInterval: 60 * 1000, // must be divisible by 250
+   
+    // also use maxConcurrent and/or minTime for safety
+    maxConcurrent: 1,
+    minTime: 333 // pick a value that makes sense for your use case
+});
+const fetchSRC = limiter.wrap(fetch);
 
 const BASE_URL = "https://www.speedrun.com/api/v1";
 
@@ -22,6 +34,7 @@ export async function fetchAllRuns(gameId: string, categoryId: string, options: 
 
     while(next = res.pagination.links.find(link => link.rel === 'next')?.uri) {
         res = await get<RunsResponse>(next);
+        console.log(res);
 
         runs = [...runs, ...res.data];
     }
@@ -54,5 +67,5 @@ async function get<ResponseType>(baseURL: string, options: Record<string, any> =
         url += `?${Object.entries(options).map(([k, v]) => `${k}=${v}`).join('&')}`;
     }
 
-    return fetch(url).then(res => res.json()) as Promise<ResponseType>;
+    return fetchSRC(url).then(res => res.json()) as Promise<ResponseType>;
 }
