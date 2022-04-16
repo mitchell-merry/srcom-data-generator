@@ -1,6 +1,8 @@
 import { google, sheets_v4 } from 'googleapis';
 import { Run } from 'srcom-rest-api';
 
+export type Table = (string | undefined | null)[][];
+
 export async function getSheets () {
     const auth = new google.auth.GoogleAuth({ 
         keyFile: "secrets.json",
@@ -15,7 +17,7 @@ export async function getSheets () {
     return sheets;
 }
 
-export async function loadDataIntoSheet(sheets: sheets_v4.Sheets, spreadsheetId: string, title: string, table: string[][]) {
+export async function loadDataIntoSheet(sheets: sheets_v4.Sheets, spreadsheetId: string, title: string, table: Table) {
     
     await sheets.spreadsheets.values.clear({
         spreadsheetId,
@@ -33,13 +35,13 @@ export async function loadDataIntoSheet(sheets: sheets_v4.Sheets, spreadsheetId:
     });
 }
 
-export function formatRunsToTable(data: Run[]): string[][] {
+export function formatRunsToTable(data: Run[]): Table {
     if(data.length === 0) return [];
 
     return [[
         "Date (of submission)", "Time (of submission)", "Player", "Time (minutes)", "Link", "Datetime"
     ], ...data.map(run => {
-        if(!('data' in run.players)) return [''];
+        if(!('data' in run.players)) throw new Error("Run[] must be embedded with Players.");
 
         const datetime = run.submitted || "";
         const [date, time] = datetime.split("Z")[0].split("T");
