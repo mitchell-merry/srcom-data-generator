@@ -34,7 +34,7 @@ if(process.env.SHEET_ID === undefined) {
     process.exit(1);
 }
 
-if(process.env.SHEET_RANGE === undefined) {
+if(process.env.SHEET_RANGE === undefined || process.env.SHEET_RANGE === "") {
     console.log("You must define a SHEET_RANGE in a .env file in the root of this project.");
     process.exit(1);
 }
