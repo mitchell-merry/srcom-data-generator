@@ -1,14 +1,12 @@
 import 'dotenv/config';
 
-import { fetchAllRuns } from './api';
+import { fetchAllLevelRuns, fetchAllRuns } from './api';
 import { RunsParams } from 'srcom-rest-api';
 import { getLeaderboardFromUser } from './user';
 import { formatRunsToTable, getSheets, loadDataIntoSheet } from './sheets';
 
 async function getRunsFromLeaderboard() {
     const { gameId, levelId, categoryId, variables } = await getLeaderboardFromUser();
-
-    console.log(gameId, levelId, categoryId, variables);
 
     const options: RunsParams = {
         orderby: "submitted",
@@ -17,12 +15,9 @@ async function getRunsFromLeaderboard() {
         direction: "asc"
     }
 
-    let runs = await fetchAllRuns(gameId, categoryId, levelId, options);
-    console.log("INITIAL: " + runs.length);
-
-    runs = runs.filter(run => {
-        return !variables.some(([variableId, valueId]) => run.values[variableId] !== valueId);
-    });
+    let runs = levelId 
+        ? await fetchAllLevelRuns(gameId, categoryId, levelId, options, variables)
+        : await fetchAllRuns(gameId, categoryId, options, variables);
     
     return runs;
 }
