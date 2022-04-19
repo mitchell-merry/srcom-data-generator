@@ -31,7 +31,6 @@ export async function fetchAllRuns(gameId: string, categoryId: string, options: 
 
     while(next = res.pagination.links.find(link => link.rel === 'next')?.uri) {
         res = await get<RunsResponse>(next);
-        // console.log(res);
 
         runs = [...runs, ...res.data];
     }
