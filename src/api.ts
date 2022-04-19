@@ -1,6 +1,6 @@
 import Bottleneck from 'bottleneck';
 import fetch from 'node-fetch';
-import { Run, RunsParams, RunsResponse, GameLevelsResponse, GameCategoriesResponse, GameLevelsParams, GameCategoriesParams, LevelCategoriesResponse, LevelCategoriesParams } from 'srcom-rest-api';
+import { Error, Run, RunsParams, RunsResponse, GameLevelsResponse, GameCategoriesResponse, GameLevelsParams, GameCategoriesParams, LevelCategoriesResponse, LevelCategoriesParams } from 'srcom-rest-api';
 
 const limiter = new Bottleneck({
     reservoir: 100, // initial value
@@ -67,5 +67,12 @@ async function get<ResponseType>(baseURL: string, options: Record<string, any> =
         url += `?${Object.entries(options).map(([k, v]) => `${k}=${v}`).join('&')}`;
     }
 
-    return fetchSRC(url).then(res => res.json()) as Promise<ResponseType>;
+    const res = await fetchSRC(url).then(res => res.json()) as ResponseType | Error;
+    
+    if('status' in res) {
+        console.error(res);
+        throw new Error(res.message);
+    }
+    
+    return res;
 }
