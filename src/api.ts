@@ -3,19 +3,16 @@ import fetch from 'node-fetch';
 import { Error, Run, RunsParams, RunsResponse, GameLevelsResponse, GameCategoriesResponse, GameLevelsParams, GameCategoriesParams, LevelCategoriesResponse, LevelCategoriesParams } from 'srcom-rest-api';
 
 const limiter = new Bottleneck({
-    reservoir: 100, // initial value
+    reservoir: 100,
     reservoirRefreshAmount: 100,
-    reservoirRefreshInterval: 60 * 1000, // must be divisible by 250
+    reservoirRefreshInterval: 60 * 1000,
    
-    // also use maxConcurrent and/or minTime for safety
     maxConcurrent: 1,
-    minTime: 333 // pick a value that makes sense for your use case
+    minTime: 333
 });
 const fetchSRC = limiter.wrap(fetch);
 
 const BASE_URL = "https://www.speedrun.com/api/v1";
-
-// export async function fetchAllCategories()
 
 export async function fetchAllLevelRuns(gameId: string, categoryId: string, levelId: string | undefined, options: RunsParams = {}, variables: [string, string][] = []): Promise<Run[]> {
     return fetchAllRuns(gameId, categoryId, { ...options, level: levelId }, variables);
