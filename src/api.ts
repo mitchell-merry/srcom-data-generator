@@ -1,6 +1,6 @@
 import Bottleneck from 'bottleneck';
 import fetch from 'node-fetch';
-import { Error, Run, RunsParams, RunsResponse, GameLevelsResponse, GameCategoriesResponse, GameLevelsParams, GameCategoriesParams, LevelCategoriesResponse, LevelCategoriesParams } from 'srcom-rest-api';
+import { Error, Run, RunsParams, RunsResponse, GameLevelsResponse, GameCategoriesResponse, GameLevelsParams, GameCategoriesParams, LevelCategoriesResponse, LevelCategoriesParams } from './types/srcom-rest-api';
 
 const limiter = new Bottleneck({
     reservoir: 100,
