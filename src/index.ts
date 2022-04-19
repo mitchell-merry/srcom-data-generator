@@ -6,6 +6,8 @@ import { getLeaderboardFromUser } from './user';
 import { formatRunsToTable, getSheets, loadDataIntoSheet, Table } from './sheets';
 
 type Time = (number | undefined);
+type Date = string;
+type PlayerName = string;
 
 async function getRunsFromLeaderboard() {
     const { gameId, levelId, categoryId, variables } = await getLeaderboardFromUser();
@@ -34,11 +36,11 @@ function playersToString (players: RunPlayer[] | Data<Player[]>): string {
 }
 
 function formatRunsToFlourish(runs: Run[], top = -1): Table {
+    
+    let dates: Date[] = runs.map(run => run.date).filter((d): d is string => !!d);
+    dates = dates.filter((v, i) => v && dates.indexOf(v) === i) as Date[];
 
-    let dates: string[] = runs.map(run => run.date).filter((d): d is string => !!d);
-    dates = dates.filter((v, i) => v && dates.indexOf(v) === i) as string[];
-
-    let playerRuns: Record<string, Record<string, Time>> = {}; 
+    let playerRuns: Record<PlayerName, Record<Date, Time>> = {}; 
 
     /*
     {
@@ -50,26 +52,7 @@ function formatRunsToFlourish(runs: Run[], top = -1): Table {
             "2022-04-11": 18.1,
             "2022-04-14": 17.58
         },
-        "MildGothDaddy": {
-            "2022-02-04": 31.88,
-            "2022-02-05": 26.73,
-            "2022-02-20": 21.55
-        },
-        "PleasantlyGG": {
-            "2022-02-04": 23.88,
-            "2022-02-09": 21.19,
-            "2022-02-10": 20.74,
-            "2022-02-15": 19.35
-        },
-        "liq": {
-            "2022-02-13": 21.22,
-            "2022-02-20": 20.08,
-            "2022-02-25": 19.26
-        },
-        "Zomb_Slays": {
-            "2022-02-16": 21.65,
-            "2022-02-24": 20.7
-        }
+        ...
     }
     */
     for(const run of runs) {
@@ -81,7 +64,18 @@ function formatRunsToFlourish(runs: Run[], top = -1): Table {
         playerRuns[n][run.date] = Math.floor(run.times.primary_t*100/60)/100;
     }
 
-    let playerRunData: Record<string, Time[]> = Object.fromEntries(Object.entries(playerRuns)
+    /*  
+    {
+        "Skejven": [
+            22.99, 22.99, 22.99, 22.99, 22.99, ...
+        ],
+        "diggity": [
+            undefined, 22.21, 22.21, 22.21, ..., 18.1, 17.58
+        ],
+        ...
+    }
+     */
+    let playerRunData: Record<PlayerName, Time[]> = Object.fromEntries(Object.entries(playerRuns)
         .map(([p, runs]) => {
 
             let pbs: Time[] = dates.map((date, i) => runs[date]);
@@ -94,13 +88,22 @@ function formatRunsToFlourish(runs: Run[], top = -1): Table {
             return [p, pbs];
         }));
 
+    // set times in above structure to undefined it was not in the top x places for the day
     if(top > 0) {
-        dates.forEach((date, i) => {
-            let boardOnDay: [string, Time][] = Object.entries(playerRunData)
-                .map(([p, r]): [string, Time] => {
-                    return [p, r[i]];
+        dates.forEach((date, dateIndex) => {
+            /*
+            [
+                ["Skejven", 22.99],
+                ["diggity", 17.58],
+                ...
+            ]
+            */
+            let boardOnDay: [PlayerName, Time][] = Object.entries(playerRunData)
+                .map(([p, r]): [PlayerName, Time] => {
+                    return [p, r[dateIndex]];
                 });
 
+            // sort board
             boardOnDay.sort((a, b) => {
                 if(!a[1]) return 1;
                 if(!b[1]) return -1;
@@ -108,25 +111,21 @@ function formatRunsToFlourish(runs: Run[], top = -1): Table {
                 return a[1] - b[1];
             });
 
-            boardOnDay = boardOnDay.map(([player, time], i) => {
-                return [player, i >= top ? undefined : time];
-            });
-
-            boardOnDay.forEach(([player, time]) => {
-                playerRunData[player][i] = time;
+            // set time to undefined for those outside the top x
+            boardOnDay.forEach(([player, time], playerPlace) => {
+                playerRunData[player][dateIndex] = playerPlace >= top ? undefined : time;
             });
         });
-        
-        // console.log(JSON.stringify(playerRunData, null, 2));
     }
 
-    // filter out empties
+    // filter out empties (players that were never in the top x runs)
     playerRunData = Object.fromEntries(Object.entries(playerRunData)
         .filter(([player, times]) => {
             return times.some(time => time);
         }
     ));
 
+    // format data to table
     return [
         [ "Player", ...dates ],
         ...Object.entries(playerRunData).map(([k, v]) => [k, ...v])
