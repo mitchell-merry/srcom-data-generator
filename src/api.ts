@@ -29,12 +29,16 @@ export async function fetchAllRuns(gameId: string, categoryId: string, options: 
     let res = await get<RunsResponse>(`${BASE_URL}/runs`, paramaters);
     let runs: Run[] = res.data;
     let next: string | undefined;
+    let count = 1;
 
     while(next = res.pagination.links.find(link => link.rel === 'next')?.uri) {
+        console.log(`Fetched ${count} pages...`);
         res = await get<RunsResponse>(next);
-
+        
         runs = [...runs, ...res.data];
+        count++;
     }
+    console.log("Fetched all!");
 
     return runs.filter(run => {
         return !variables.some(([variableId, valueId]) => run.values[variableId] !== valueId);
