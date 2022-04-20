@@ -1,5 +1,5 @@
 import { google, sheets_v4 } from 'googleapis';
-import { Run } from 'srcom-rest-api';
+import { Run } from 'src-ts';
 
 export type Table = (string | number | undefined | null)[][];
 
