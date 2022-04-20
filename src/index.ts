@@ -1,7 +1,7 @@
 import 'dotenv/config';
 
 import { fetchAllLevelRuns, fetchAllRuns } from './api';
-import { RunsParams, Run, RunPlayer, Player, Data } from 'srcom-rest-api';
+import { RunsParams, Run, RunPlayer, Player, Data } from 'src-ts';
 import { getLeaderboardFromUser } from './user';
 import { formatRunsToTable, getSheets, loadDataIntoSheet, Table } from './sheets';
 
