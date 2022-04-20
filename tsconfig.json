@@ -9,10 +9,6 @@
         "noImplicitAny": true,
         "strictNullChecks": true,
         
-        "outDir": "./build",
-        "typeRoots": [
-            "./node_modules/@types",
-            "./src/types"
-        ]
+        "outDir": "./build"
     }
 }
