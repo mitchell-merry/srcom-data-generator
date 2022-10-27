@@ -24,7 +24,8 @@
     "googleapis": "^98.0.0",
     "node-fetch": "^3.2.3",
     "prompt-sync": "^4.2.0",
-    "src-ts": "^1.0.0"
+    "src-prompt": "^0.0.1",
+    "src-ts": "file:../src-ts/src-ts-2.6.1.tgz"
   },
   "devDependencies": {
     "@types/gapi": "^0.0.41",

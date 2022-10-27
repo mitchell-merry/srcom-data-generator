@@ -1,5 +1,5 @@
 import { google, sheets_v4 } from 'googleapis';
-import { Run } from 'src-ts';
+import SRC from 'src-ts';
 
 export type Table = (string | number | undefined | null)[][];
 
@@ -35,15 +35,13 @@ export async function loadDataIntoSheet(sheets: sheets_v4.Sheets, spreadsheetId:
     });
 }
 
-export function formatRunsToTable(data: Run[]): Table {
+export function formatRunsToTable(data: SRC.Run<"players">[]): Table {
     if(data.length === 0) return [];
 
     return [[
         "Date (of submission)", "Time (of submission)", "Player", "Time (minutes)", "Link", "Datetime"
     ], ...data.map(run => {
-        if(!('data' in run.players)) throw new Error("Run[] must be embedded with Players.");
-
-        const datetime = run.submitted || "";
+        const datetime = run.submitted || "N/ATN/AZ";
         const [date, time] = datetime.split("Z")[0].split("T");
 
         const playerNames = run.players.data.map(p => {

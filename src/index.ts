@@ -1,46 +1,42 @@
 import 'dotenv/config';
 
-import { fetchAllLevelRuns, fetchAllRuns } from './api';
-import { RunsParams, Run, RunPlayer, Player, Data } from 'src-ts';
-import { getLeaderboardFromUser } from './user';
+import SRC from 'src-ts';
+import { getLeaderboardFromUser } from 'src-prompt';
+
 import { formatRunsToTable, getSheets, loadDataIntoSheet, Table } from './sheets';
 
 type Time = (number | undefined);
-type Date = string;
-type PlayerName = string;
+
+const isNotNull = <T>(value: T): value is Exclude<T, null> => value !== null;
 
 async function getRunsFromLeaderboard() {
-    const { gameId, levelId, categoryId, variables } = await getLeaderboardFromUser();
+    const { game, level, category, variables } = await getLeaderboardFromUser();
 
-    const options: RunsParams = {
+    const options = {
+		game, category, level,
         orderby: "submitted",
         status: "verified",
         embed: "players",
         direction: "asc"
-    }
+    } as const;
 
-    let runs = levelId 
-        ? await fetchAllLevelRuns(gameId, categoryId, levelId, options, variables)
-        : await fetchAllRuns(gameId, categoryId, options, variables);
-    
-    return runs;
+    return SRC.filterRuns(await SRC.getAllRuns(options), variables);
 }
 
-function playersToString (players: RunPlayer[] | Data<Player[]>): string {
+function playersToString(players: SRC.Player[]): string {
     if(!('data' in players)) throw new Error("Name does not exist.");
     
-    return players.data.map(player => {
-        if('name' in player) return player.name;
+    return players.map(player => {
+        if(SRC.playerIsGuest(player)) return player.name;
         else return player.names.international;
     }).join(", ");
 }
 
-function formatRunsToFlourish(runs: Run[], top = -1): Table {
-    
-    let dates: Date[] = runs.map(run => run.date).filter((d): d is string => !!d);
-    dates = dates.filter((v, i) => v && dates.indexOf(v) === i) as Date[];
+function formatRunsToFlourish(runs: SRC.Run<"players">[], top = -1): Table {
+    let dates = runs.map(run => run.date).filter(isNotNull);
+    dates = dates.filter((v, i) => dates.indexOf(v) === i);
 
-    let playerRuns: Record<PlayerName, Record<Date, Time>> = {}; 
+    let playerRuns: Record<string, Record<string, Time>> = {}; 
 
     /*
     {
@@ -58,7 +54,7 @@ function formatRunsToFlourish(runs: Run[], top = -1): Table {
     for(const run of runs) {
         if(run.date === null) continue;
 
-        const n = playersToString(run.players);
+        const n = playersToString(run.players.data);
         if(!playerRuns[n]) playerRuns[n] = {};
         
         playerRuns[n][run.date] = Math.floor(run.times.primary_t*100/60)/100;
@@ -75,10 +71,10 @@ function formatRunsToFlourish(runs: Run[], top = -1): Table {
         ...
     }
      */
-    let playerRunData: Record<PlayerName, Time[]> = Object.fromEntries(Object.entries(playerRuns)
+    let playerRunData: Record<string, Time[]> = Object.fromEntries(Object.entries(playerRuns)
         .map(([p, runs]) => {
 
-            let pbs: Time[] = dates.map((date, i) => runs[date]);
+            let pbs: Time[] = dates.map(date => runs[date]);
 
             pbs.forEach((pb, i) => {
                 // extend times
@@ -90,7 +86,7 @@ function formatRunsToFlourish(runs: Run[], top = -1): Table {
 
     // set times in above structure to undefined it was not in the top x places for the day
     if(top > 0) {
-        dates.forEach((date, dateIndex) => {
+        dates.forEach((_, dateIndex) => {
             /*
             [
                 ["Skejven", 22.99],
@@ -98,8 +94,8 @@ function formatRunsToFlourish(runs: Run[], top = -1): Table {
                 ...
             ]
             */
-            let boardOnDay: [PlayerName, Time][] = Object.entries(playerRunData)
-                .map(([p, r]): [PlayerName, Time] => {
+            let boardOnDay: [string, Time][] = Object.entries(playerRunData)
+                .map(([p, r]): [string, Time] => {
                     return [p, r[dateIndex]];
                 });
 
@@ -119,11 +115,7 @@ function formatRunsToFlourish(runs: Run[], top = -1): Table {
     }
 
     // filter out empties (players that were never in the top x runs)
-    playerRunData = Object.fromEntries(Object.entries(playerRunData)
-        .filter(([player, times]) => {
-            return times.some(time => time);
-        }
-    ));
+    playerRunData = Object.fromEntries(Object.entries(playerRunData).filter(([_, times]) => times.some(time => time)));
 
     // format data to table
     return [
