@@ -10,7 +10,7 @@ type Time = (number | undefined);
 const isNotNull = <T>(value: T): value is Exclude<T, null> => value !== null;
 
 async function getRunsFromLeaderboard() {
-    const { game, level, category, variables } = await getLeaderboardFromUser();
+    const { game, level, category, variables } = await getLeaderboardFromUser(true);
 
     const options = {
 		game, category, level,
@@ -20,7 +20,8 @@ async function getRunsFromLeaderboard() {
         direction: "asc"
     } as const;
 
-    return SRC.filterRuns(await SRC.getAllRuns(options), variables);
+	const runs = await SRC.getAllRuns(options);
+    return SRC.filterRuns(runs, variables);
 }
 
 function playersToString(players: SRC.Player[]): string {
